@@ -2,9 +2,11 @@ package com.flipper.discord;
 
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.MessageBuilder;
 import net.dv8tion.jda.api.OnlineStatus;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.entities.MessageChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.utils.ChunkingFilter;
@@ -29,6 +31,7 @@ public class DayZServerStatus extends ListenerAdapter {
 
     public String cachedServerResponse = null;
     public boolean online;
+    public int currentPlayers, maxPlayers;
 
     public ScheduledExecutorService executor;
 
@@ -51,34 +54,26 @@ public class DayZServerStatus extends ListenerAdapter {
             JSONObject obj = getServerInfo();
             System.out.println("[beating] ");
             online = obj.getJSONObject(cfToolsServerID).getBoolean("online");
+            currentPlayers = obj.getJSONObject(cfToolsServerID).getJSONObject("status").getInt("players");
+            maxPlayers = obj.getJSONObject(cfToolsServerID).getJSONObject("status").getInt("players");
+
             if(online) {
-                discordAPI.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(obj.getJSONObject(cfToolsServerID).getString("name")));
+                discordAPI.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(currentPlayers + "/" + maxPlayers));
             } else {
                 discordAPI.getPresence().setPresence(OnlineStatus.DO_NOT_DISTURB, Activity.watching("my DayZ server startup."));
             }
             System.out.print(online);
         };
-        executor.scheduleWithFixedDelay(task, 0, 2, TimeUnit.MINUTES);
+        executor.scheduleWithFixedDelay(task, 0, 50, TimeUnit.SECONDS);
     }
 
     @Override
     public void onMessageReceived(MessageReceivedEvent event)
     {
         Message msg = event.getMessage();
-        if (msg.getContentRaw().equals("!dayzstatus")) {
-            executor.shutdownNow();
-            Runnable task = () -> {
-                JSONObject obj = getServerInfo();
-                System.out.println("[beating] ");
-                online = obj.getJSONObject(cfToolsServerID).getBoolean("online");
-                if(online) {
-                    discordAPI.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(obj.getJSONObject(cfToolsServerID).getString("name")));
-                } else {
-                    discordAPI.getPresence().setPresence(OnlineStatus.DO_NOT_DISTURB, Activity.watching("my DayZ server startup."));
-                }
-                System.out.print(online);
-            };
-            executor.scheduleWithFixedDelay(task, 0, 2, TimeUnit.MINUTES);
+        if (msg.getContentRaw().equals("!serverrank")) {
+            MessageChannel channel = event.getChannel();
+            channel.sendMessage("Current CFTools rank is: " +new JSONObject(cachedServerResponse).getJSONObject(cfToolsServerID).getInt("rank")).queue();
         }
     }
 
