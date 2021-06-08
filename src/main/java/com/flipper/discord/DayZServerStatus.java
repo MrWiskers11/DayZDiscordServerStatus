@@ -55,7 +55,7 @@ public class DayZServerStatus extends ListenerAdapter {
             System.out.println("[beating] ");
             online = obj.getJSONObject(cfToolsServerID).getBoolean("online");
             currentPlayers = obj.getJSONObject(cfToolsServerID).getJSONObject("status").getInt("players");
-            maxPlayers = obj.getJSONObject(cfToolsServerID).getJSONObject("status").getInt("players");
+            maxPlayers = obj.getJSONObject(cfToolsServerID).getJSONObject("status").getInt("slots");
 
             if(online) {
                 discordAPI.getPresence().setPresence(OnlineStatus.ONLINE, Activity.playing(currentPlayers + "/" + maxPlayers));
